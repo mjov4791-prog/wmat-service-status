@@ -19,7 +19,7 @@ create table if not exists wss_communities (
   created_at        timestamptz default now()
 );
 
--- Seed the 11 WMAT communities (only inserts if not already present).
+-- Seed the WMAT communities (only inserts if not already present).
 insert into wss_communities (slug, name, is_upstream_node, notes, sort_order)
 values
   ('whiteriver',          'Whiteriver',            false, 'Main administrative town for WMAT', 10),
@@ -32,7 +32,13 @@ values
   ('forestdale',          'Forestdale',            false, null, 80),
   ('miner-flats',         'Miner Flats',           true,  'Location of main water pumps — outages here may cascade to downstream communities', 5),
   ('sunrise-park-resort', 'Sunrise Park Resort',   false, null, 90),
-  ('turkey-creek',        'Turkey Creek',          false, null, 100)
+  ('turkey-creek',        'Turkey Creek',          false, null, 100),
+  -- Added June 2026 after community feedback (councilman from Canyon Day, others)
+  ('canyon-day',          'Canyon Day',            false, null, 110),
+  ('dark-shadows',        'Dark Shadows',          false, null, 120),
+  ('diamond-creek',       'Diamond Creek',         false, null, 130),
+  ('rainbow-city',        'Rainbow City',          false, null, 140),
+  ('china-town',          'China Town',            false, null, 150)
 on conflict (slug) do nothing;
 
 -- ===========================================================================
