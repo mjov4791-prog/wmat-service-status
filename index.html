@@ -572,7 +572,7 @@
     <div class="inner">
       <h1>WMAT Service Status</h1>
       <p class="sub">A community voice for Fort Apache Indian Reservation.</p>
-      <span class="watching"><span class="dot"></span>Tribal leadership monitors this dashboard</span>
+      <span class="watching"><span class="dot"></span>Reports may be shared with tribal leadership</span>
       <div class="updated" id="updated">Loading…</div>
     </div>
   </header>
@@ -581,7 +581,7 @@
 
     <!-- ===== Comfort message (changes by my-community status) ===== -->
     <div class="comfort" id="comfort">
-      <strong>You are not alone.</strong> This is a place where your community speaks together. Every report you share is seen by your neighbors and by tribal leaders. When water is hard, we hear each other here.
+      <strong>You are not alone.</strong> This is a place where your community speaks together. Every report you share is seen by your neighbors — and may be shared with tribal leaders to help them understand what residents are experiencing. When water is hard, we hear each other here.
     </div>
 
     <!-- ===== "My Community" picker, only shown first visit ===== -->
@@ -589,6 +589,7 @@
       <h2>Tell us where you live</h2>
       <p>So we can show you what's happening close to home.</p>
       <div class="picker" id="picker-buttons"></div>
+      <p style="margin-top: 14px; font-size: 12.5px; color: var(--warm-gray);">If your water is on right now, that counts as a real report too — tap the report button to share.</p>
     </div>
 
     <!-- ===== My community hero card ===== -->
@@ -730,13 +731,13 @@
         <button class="submit" id="sheet-submit" type="button">Share with my neighbors</button>
       </div>
       <div class="form-msg" id="form-msg"></div>
-      <div class="privacy">Anonymous by default. Tribal leaders monitor this dashboard. You are not alone.</div>
+      <div class="privacy">Anonymous by default. Visible to your community. Reports may be shared with tribal leadership.</div>
     </div>
 
     <div id="sheet-thanks" class="thanks" hidden>
       <div class="heart">🤝</div>
       <h3>Your community sees you.</h3>
-      <p>Your report has been received. Tribal leaders monitor this dashboard.</p>
+      <p>Your report has been received. It is visible to your community and may be shared with tribal leadership.</p>
       <p>You are not alone. Relief is coming.</p>
       <button type="button" id="sheet-close-thanks">Close</button>
     </div>
@@ -821,7 +822,7 @@
       const c = myRow && myRow.derived_status ? myRow.derived_status.code : 'unknown';
       const name = myRow ? myRow.community_name : 'Your community';
       if (c === 'outage') {
-        return `<strong>${escapeHtml(name)}, we hear you.</strong> Your neighbors are reporting this too. Below you'll find where to get water and who to call. Tribal leaders monitor this dashboard — your voice has been received. Relief is coming.`;
+        return `<strong>${escapeHtml(name)}, we hear you.</strong> Your neighbors are reporting this too. Below you'll find where to get water and who to call. Your voices have been received by this community. Reports from this dashboard may be shared with tribal leaders. Relief is coming.`;
       }
       if (c === 'boil_advisory') {
         return `<strong>${escapeHtml(name)} — boil advisory in effect.</strong> Boil all drinking water for at least one minute before using. We see you. Take care of each other.`;
@@ -833,7 +834,7 @@
         return `<strong>${escapeHtml(name)} — water is flowing today.</strong> Neighbors have confirmed it. If anything changes, let us know so the rest of the community can stay informed.`;
       }
       // unknown
-      return `<strong>You are not alone.</strong> This is a place where your community speaks together. Every report you share is seen by your neighbors and by tribal leaders. When water is hard, we hear each other here.`;
+      return `<strong>You are not alone.</strong> This is a place where your community speaks together. Every report you share is seen by your neighbors — and may be shared with tribal leaders. When water is hard, we hear each other here.`;
     }
 
     function statusLabelHuman(code) {
