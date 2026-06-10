@@ -1,0 +1,14 @@
+{
+  "name": "wmat-service-status",
+  "version": "0.1.0",
+  "description": "Community-driven service status dashboard for the White Mountain Apache Tribe (Fort Apache Indian Reservation)",
+  "type": "module",
+  "private": true,
+  "scripts": {},
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

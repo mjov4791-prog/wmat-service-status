@@ -1,0 +1,1112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>WMAT Service Status — You are not alone.</title>
+  <meta name="description" content="A community voice tool for Fort Apache Indian Reservation. See what your neighbors are reporting about water. Share what you're seeing. Tribal leaders are watching." />
+  <meta name="theme-color" content="#5b8ec7" />
+  <style>
+    :root {
+      /* Warm desert palette — inspired by the actual landscape and sky of
+         White Mountain Apache country. No dark navy anywhere. */
+      --sand: #fef7e8;
+      --sand-deep: #f7ecd3;
+      --cream: #fffaf0;
+      --terracotta: #d97757;
+      --terracotta-deep: #b85c3d;
+      --gold: #e6a647;
+      --gold-deep: #c98a2e;
+
+      /* Soothing water-blue palette — used for the main gradient
+         (header, floating button, submit). Calming, water-themed. */
+      --water-light: #8ab8de;
+      --water: #5b8ec7;
+      --water-deep: #3d6ea0;
+      --water-darker: #2c4f73;
+      --warm-brown: #3a2f1f;
+      --warm-brown-soft: #5c4d36;
+      --warm-gray: #8c8474;
+      --sky: #87a3b5;
+      --sky-deep: #5b7c92;
+
+      /* Status colors — warm, not clinical */
+      --ok-green: #4a9d4d;
+      --ok-bg: #d5edc7;
+      --warning-amber: #d4791f;
+      --warning-bg: #fbe6c8;
+      --boil-orange: #b85c00;
+      --boil-bg: #ffe0b3;
+      --outage-coral: #c54545;
+      --outage-bg: #f7d2cf;
+      --unknown-tan: #8c8474;
+      --unknown-bg: #ede9dd;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    html { -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--sand);
+      color: var(--warm-brown);
+      line-height: 1.55;
+      font-size: 16px;
+      min-height: 100vh;
+      padding-bottom: 96px; /* room for floating Report button */
+    }
+
+    /* ===== Header — soothing water gradient ===== */
+    header.hero {
+      background: linear-gradient(135deg, var(--water-light) 0%, var(--water-deep) 100%);
+      color: #fff;
+      padding: 22px 18px 26px;
+      position: relative;
+      overflow: hidden;
+    }
+    header.hero::before {
+      /* Subtle mountain silhouette in the background */
+      content: '';
+      position: absolute;
+      bottom: -2px; left: 0; right: 0;
+      height: 32px;
+      background:
+        radial-gradient(ellipse at 18% 100%, var(--water-darker) 0, transparent 35%),
+        radial-gradient(ellipse at 52% 100%, var(--water-darker) 0, transparent 32%),
+        radial-gradient(ellipse at 82% 100%, var(--water-darker) 0, transparent 38%);
+      opacity: 0.38;
+      pointer-events: none;
+    }
+    header.hero .inner { max-width: 720px; margin: 0 auto; position: relative; }
+    header.hero h1 {
+      margin: 0 0 4px;
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+    }
+    header.hero .sub {
+      font-size: 14.5px;
+      color: rgba(255,255,255,0.92);
+      margin: 0 0 10px;
+    }
+    header.hero .watching {
+      display: inline-block;
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.32);
+      color: #fff;
+      padding: 5px 12px;
+      border-radius: 14px;
+      font-size: 12px;
+      letter-spacing: 0.02em;
+      font-weight: 600;
+    }
+    header.hero .watching .dot {
+      display: inline-block;
+      width: 7px; height: 7px;
+      background: #fff;
+      border-radius: 50%;
+      margin-right: 6px;
+      animation: pulse-soft 2s ease-in-out infinite;
+      vertical-align: middle;
+    }
+    @keyframes pulse-soft {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.45; }
+    }
+    header.hero .updated {
+      font-size: 11.5px;
+      color: rgba(255,255,255,0.78);
+      margin-top: 12px;
+      letter-spacing: 0.03em;
+    }
+
+    /* ===== Main ===== */
+    main { max-width: 720px; margin: 0 auto; padding: 18px 16px 24px; }
+    section { margin-bottom: 22px; }
+    h2 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--warm-brown);
+    }
+    h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--warm-brown);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* ===== Comfort message ===== */
+    .comfort {
+      background: var(--cream);
+      border: 1px solid var(--sand-deep);
+      border-radius: 16px;
+      padding: 18px 20px;
+      margin-bottom: 18px;
+      font-size: 15.5px;
+      color: var(--warm-brown);
+      line-height: 1.55;
+    }
+    .comfort.alert {
+      background: linear-gradient(135deg, #fff4ec 0%, var(--cream) 100%);
+      border-color: #f1c8b4;
+    }
+    .comfort strong { color: var(--terracotta-deep); }
+
+    /* ===== "My Community" picker ===== */
+    .my-comm-prompt {
+      background: var(--cream);
+      border: 2px dashed var(--gold-deep);
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 18px;
+    }
+    .my-comm-prompt h2 {
+      margin: 0 0 6px;
+      font-size: 19px;
+      color: var(--warm-brown);
+    }
+    .my-comm-prompt p {
+      margin: 0 0 14px;
+      color: var(--warm-brown-soft);
+      font-size: 14px;
+    }
+    .my-comm-prompt .picker {
+      display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+    }
+    .my-comm-prompt .picker button {
+      background: var(--sand);
+      border: 1.5px solid var(--gold-deep);
+      color: var(--warm-brown);
+      padding: 10px 14px;
+      border-radius: 22px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: transform 0.12s, background 0.12s;
+    }
+    .my-comm-prompt .picker button:hover,
+    .my-comm-prompt .picker button:active {
+      background: var(--gold);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    /* ===== Hero community card (My Community) ===== */
+    .hero-card {
+      background: #fff;
+      border: 1px solid var(--sand-deep);
+      border-radius: 20px;
+      padding: 24px 22px;
+      margin-bottom: 20px;
+      text-align: center;
+      box-shadow: 0 4px 16px rgba(184, 92, 61, 0.08);
+      position: relative;
+    }
+    .hero-card .change-link {
+      position: absolute;
+      top: 12px; right: 14px;
+      background: transparent;
+      border: none;
+      color: var(--warm-gray);
+      font-size: 12.5px;
+      cursor: pointer;
+      text-decoration: underline;
+      padding: 4px 8px;
+    }
+    .hero-card .change-link:hover { color: var(--terracotta-deep); }
+    .hero-card .label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--warm-gray);
+      margin-bottom: 4px;
+    }
+    .hero-card .community-name {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--warm-brown);
+      margin-bottom: 16px;
+      letter-spacing: -0.01em;
+    }
+    .drop-icon {
+      display: inline-block;
+      width: 88px; height: 88px;
+      position: relative;
+    }
+    .hero-card .drop-icon { width: 100px; height: 100px; margin: 8px auto 14px; display: block; }
+    .hero-card .status-text {
+      font-size: 22px;
+      font-weight: 700;
+      margin: 6px 0 4px;
+    }
+    .hero-card .status-text.s-ok { color: var(--ok-green); }
+    .hero-card .status-text.s-degraded { color: var(--warning-amber); }
+    .hero-card .status-text.s-boil { color: var(--boil-orange); }
+    .hero-card .status-text.s-outage { color: var(--outage-coral); }
+    .hero-card .status-text.s-unknown { color: var(--warm-gray); }
+    .hero-card .voice-line {
+      font-size: 14.5px;
+      color: var(--warm-brown-soft);
+      margin-top: 6px;
+    }
+
+    /* ===== Emergency resources (shown when outage/issue) ===== */
+    .resources {
+      background: linear-gradient(135deg, var(--cream) 0%, #fff4ec 100%);
+      border: 1.5px solid var(--terracotta);
+      border-radius: 18px;
+      padding: 18px 20px;
+      margin-bottom: 20px;
+    }
+    .resources h2 {
+      color: var(--terracotta-deep);
+      margin-bottom: 4px;
+      font-size: 18px;
+    }
+    .resources .res-sub {
+      font-size: 13.5px;
+      color: var(--warm-brown-soft);
+      margin: 0 0 14px;
+    }
+    .resources .res-block {
+      background: #fff;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      border: 1px solid var(--sand-deep);
+    }
+    .resources .res-block:last-child { margin-bottom: 0; }
+    .resources .res-block h3 {
+      font-size: 12.5px;
+      color: var(--terracotta-deep);
+      margin: 0 0 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .resources .res-block p {
+      margin: 0 0 4px;
+      font-size: 14.5px;
+      color: var(--warm-brown);
+    }
+    .resources .res-block .res-detail {
+      font-size: 13px;
+      color: var(--warm-brown-soft);
+    }
+    .resources .res-block a {
+      color: var(--terracotta-deep);
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .resources .res-block a:hover { text-decoration: underline; }
+    .resources .placeholder {
+      font-style: italic;
+      color: var(--warm-gray);
+      font-size: 13px;
+    }
+
+    /* ===== Other communities grid ===== */
+    .others-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (min-width: 540px) { .others-grid { grid-template-columns: 1fr 1fr 1fr; } }
+    .comm-card {
+      background: #fff;
+      border: 1px solid var(--sand-deep);
+      border-radius: 14px;
+      padding: 14px 12px 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.12s, box-shadow 0.12s;
+    }
+    .comm-card:hover, .comm-card:active {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(184, 92, 61, 0.12);
+    }
+    .comm-card .drop-icon { width: 44px; height: 44px; display: block; margin: 0 auto 6px; }
+    .comm-card .cn { font-size: 14px; font-weight: 700; color: var(--warm-brown); }
+    .comm-card .cs { font-size: 11.5px; color: var(--warm-gray); margin-top: 2px; }
+    .comm-card.upstream { border-color: var(--gold-deep); background: linear-gradient(135deg, #fff8e8 0%, #fff 100%); }
+    .comm-card .upstream-tag {
+      display: inline-block;
+      font-size: 9.5px;
+      background: var(--gold-deep);
+      color: #fff;
+      padding: 1px 6px;
+      border-radius: 8px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    /* ===== Voices received counter ===== */
+    .voices-counter {
+      background: var(--cream);
+      border-radius: 16px;
+      padding: 16px 20px;
+      text-align: center;
+      border: 1px solid var(--sand-deep);
+    }
+    .voices-counter .big-num {
+      font-size: 36px;
+      font-weight: 800;
+      color: var(--terracotta-deep);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .voices-counter .label {
+      font-size: 13.5px;
+      color: var(--warm-brown-soft);
+    }
+    .voices-counter .label strong { color: var(--warm-brown); font-weight: 700; }
+
+    /* ===== Floating Report button ===== */
+    .fab {
+      position: fixed;
+      bottom: 16px; left: 16px; right: 16px;
+      background: linear-gradient(135deg, var(--water) 0%, var(--water-deep) 100%);
+      color: #fff;
+      border: none;
+      border-radius: 32px;
+      padding: 18px 22px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(61, 110, 160, 0.36);
+      z-index: 30;
+      letter-spacing: 0.01em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .fab:hover, .fab:active { filter: brightness(1.06); }
+    .fab .fab-icon { font-size: 22px; line-height: 1; }
+    @media (min-width: 600px) {
+      .fab { left: auto; right: 28px; bottom: 28px; padding: 18px 28px; }
+    }
+
+    /* ===== Report sheet (slides up from bottom) ===== */
+    .sheet-overlay {
+      position: fixed; inset: 0;
+      background: rgba(58, 47, 31, 0.4);
+      backdrop-filter: blur(2px);
+      z-index: 50;
+      display: none;
+    }
+    .sheet-overlay.open { display: block; }
+    .sheet {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      background: var(--cream);
+      border-top-left-radius: 24px;
+      border-top-right-radius: 24px;
+      padding: 24px 20px 28px;
+      max-height: 92vh;
+      overflow-y: auto;
+      box-shadow: 0 -12px 32px rgba(58, 47, 31, 0.28);
+      transform: translateY(100%);
+      transition: transform 0.28s ease;
+      z-index: 60;
+    }
+    .sheet.open { transform: translateY(0); }
+    .sheet .grabber {
+      width: 44px; height: 4px;
+      background: var(--sand-deep);
+      border-radius: 2px;
+      margin: 0 auto 18px;
+    }
+    .sheet h2 { font-size: 19px; margin: 0 0 4px; color: var(--warm-brown); }
+    .sheet .sub {
+      font-size: 13.5px;
+      color: var(--warm-brown-soft);
+      margin: 0 0 16px;
+    }
+    .sheet label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--warm-brown);
+      margin-bottom: 6px;
+      letter-spacing: 0.02em;
+    }
+    .sheet .field { margin-bottom: 14px; }
+    .sheet select, .sheet input[type=text], .sheet textarea {
+      width: 100%;
+      font-family: inherit;
+      font-size: 15.5px;
+      padding: 12px 14px;
+      border: 1.5px solid var(--sand-deep);
+      border-radius: 12px;
+      background: #fff;
+      color: var(--warm-brown);
+      outline: none;
+    }
+    .sheet textarea { resize: vertical; min-height: 60px; max-height: 160px; }
+    .sheet select:focus, .sheet input:focus, .sheet textarea:focus { border-color: var(--terracotta); }
+
+    .sheet .status-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+    .sheet .status-buttons button {
+      background: #fff;
+      border: 1.5px solid var(--sand-deep);
+      border-radius: 14px;
+      padding: 14px 10px;
+      text-align: center;
+      cursor: pointer;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--warm-brown);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.12s;
+    }
+    .sheet .status-buttons button .emoji { font-size: 26px; line-height: 1; }
+    .sheet .status-buttons button:hover { background: var(--sand); }
+    .sheet .status-buttons button.selected {
+      background: var(--cream);
+      border-color: var(--terracotta);
+      box-shadow: 0 0 0 3px rgba(217, 119, 87, 0.16);
+    }
+
+    .sheet .submit-row {
+      display: flex; gap: 10px; align-items: center; margin-top: 18px;
+    }
+    .sheet .submit {
+      flex: 1;
+      background: linear-gradient(135deg, var(--water) 0%, var(--water-deep) 100%);
+      color: #fff;
+      border: none;
+      padding: 14px 22px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .sheet .submit:disabled { opacity: 0.55; cursor: not-allowed; }
+    .sheet .cancel {
+      background: transparent;
+      border: 1.5px solid var(--sand-deep);
+      color: var(--warm-brown-soft);
+      padding: 14px 18px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-size: 14.5px;
+      font-weight: 600;
+    }
+    .sheet .form-msg {
+      margin-top: 12px;
+      font-size: 13.5px;
+      color: var(--warm-brown-soft);
+      text-align: center;
+    }
+    .sheet .form-msg.ok { color: var(--ok-green); font-weight: 600; }
+    .sheet .form-msg.error { color: var(--outage-coral); font-weight: 600; }
+    .sheet .privacy {
+      font-size: 11.5px;
+      color: var(--warm-gray);
+      margin-top: 14px;
+      font-style: italic;
+      text-align: center;
+    }
+
+    /* ===== Thank-you takeover ===== */
+    .thanks {
+      text-align: center;
+      padding: 8px 4px 4px;
+    }
+    .thanks .heart { font-size: 48px; margin-bottom: 8px; }
+    .thanks h3 {
+      font-size: 20px;
+      color: var(--terracotta-deep);
+      margin: 0 0 10px;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+    .thanks p {
+      font-size: 15px;
+      color: var(--warm-brown);
+      margin: 0 0 10px;
+      line-height: 1.55;
+    }
+    .thanks p:last-child { color: var(--warm-brown-soft); font-size: 13.5px; }
+    .thanks button {
+      margin-top: 14px;
+      background: linear-gradient(135deg, var(--water) 0%, var(--water-deep) 100%);
+      color: #fff;
+      border: none;
+      padding: 13px 28px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    /* ===== Footer ===== */
+    footer.f {
+      background: transparent;
+      color: var(--warm-brown-soft);
+      padding: 20px 18px 30px;
+      font-size: 12.5px;
+      text-align: center;
+    }
+    footer.f .inner { max-width: 720px; margin: 0 auto; }
+    footer.f a { color: var(--terracotta-deep); text-decoration: underline; }
+    footer.f .small { color: var(--warm-gray); font-size: 11px; margin-top: 6px; }
+  </style>
+</head>
+<body>
+
+  <header class="hero">
+    <div class="inner">
+      <h1>WMAT Service Status</h1>
+      <p class="sub">A community voice for Fort Apache Indian Reservation.</p>
+      <span class="watching"><span class="dot"></span>Tribal leadership monitors this dashboard</span>
+      <div class="updated" id="updated">Loading…</div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ===== Comfort message (changes by my-community status) ===== -->
+    <div class="comfort" id="comfort">
+      <strong>You are not alone.</strong> This is a place where your community speaks together. Every report you share is seen by your neighbors and by tribal leaders. When water is hard, we hear each other here.
+    </div>
+
+    <!-- ===== "My Community" picker, only shown first visit ===== -->
+    <div class="my-comm-prompt" id="picker" hidden>
+      <h2>Tell us where you live</h2>
+      <p>So we can show you what's happening close to home.</p>
+      <div class="picker" id="picker-buttons"></div>
+    </div>
+
+    <!-- ===== My community hero card ===== -->
+    <div class="hero-card" id="hero-card" hidden>
+      <button class="change-link" id="change-community" type="button">Change community</button>
+      <div class="label">Your community</div>
+      <div class="community-name" id="my-name">—</div>
+      <svg class="drop-icon" id="my-drop" viewBox="0 0 100 100" aria-hidden="true"></svg>
+      <div class="status-text" id="my-status">—</div>
+      <div class="voice-line" id="my-voice">—</div>
+    </div>
+
+    <!-- ===== Emergency resources — shown when there's an outage anywhere ===== -->
+    <div class="resources" id="resources" hidden>
+      <h2>Help right now</h2>
+      <p class="res-sub">Take care of yourself and your family while service comes back.</p>
+
+      <div class="res-block">
+        <h3>True emergency? Call 911</h3>
+        <p>If someone in your household is in immediate danger — medical crisis, fire, fall, dehydration emergency — call <a href="tel:911"><strong>911</strong></a> right now. Don't wait.</p>
+      </div>
+
+      <div class="res-block">
+        <h3>Where to get water</h3>
+        <p><strong>East Fork Community Building</strong> — a water buffalo (community water tank) is set up here. Bring containers.</p>
+        <p class="placeholder">Other communities: locations being added. If you know of one in your community, please tell your neighbors.</p>
+      </div>
+
+      <div class="res-block">
+        <h3>WMAT Fire &amp; Rescue — wellness checks, water delivery, help</h3>
+        <p>Your nearest WMAT Fire &amp; Rescue station can help with wellness checks on elders, emergency water for the medically fragile, and non-911 emergencies during outages.</p>
+        <div style="margin-top:10px; display:grid; gap:8px;">
+          <div>
+            <strong>Fire Administration</strong> (main office, Whiteriver)<br>
+            <a href="tel:+19283381701">(928) 338-1701</a> · <a href="tel:+19283381704">(928) 338-1704</a><br>
+            <span class="res-detail">Fire Chief Mark Tessay · <a href="mailto:marktessay@wmat.us">marktessay@wmat.us</a></span>
+          </div>
+          <div>
+            <strong>Station 810 — Whiteriver area</strong><br>
+            <span class="res-detail">Serves Whiteriver, East Fork, Cedar Creek, Carrizo, Forestdale, Turkey Creek, Miner Flats</span><br>
+            <a href="tel:+19283384311">(928) 338-4311</a><br>
+            <span class="res-detail">Deputy Chief Leon Moody · <a href="mailto:leonmoody@wmat.us">leonmoody@wmat.us</a></span>
+          </div>
+          <div>
+            <strong>Station 820 — Cibecue</strong><br>
+            <a href="tel:+19283322401">(928) 332-2401</a><br>
+            <span class="res-detail">Deputy Chief Leland Lavender · <a href="mailto:lelandlavender@wmat.us">lelandlavender@wmat.us</a></span>
+          </div>
+          <div>
+            <strong>Station 830 — Hon-Dah / McNary area</strong><br>
+            <span class="res-detail">Serves Hon-Dah, McNary, Sunrise Park Resort</span><br>
+            <a href="tel:+19283342206">(928) 334-2206</a><br>
+            <span class="res-detail">Deputy Chief Carlos Valadez · <a href="mailto:carlosvaladez@wmat.us">carlosvaladez@wmat.us</a></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="res-block">
+        <h3>WMAT Utility Authority</h3>
+        <p>Call them. They need to hear from residents — the more calls they get, the faster the response.</p>
+        <p><a href="tel:+19283384825"><strong>(928) 338-4825</strong></a></p>
+      </div>
+
+      <div class="res-block">
+        <h3>Indian Health Service — Whiteriver Service Unit</h3>
+        <p>For medical questions related to a water outage (dialysis, baby formula, oxygen humidifier, kidney/heart conditions, etc.):</p>
+        <p><a href="tel:+19283384911"><strong>(928) 338-4911</strong></a></p>
+      </div>
+    </div>
+
+    <!-- ===== Other communities grid ===== -->
+    <section>
+      <h2 id="others-heading">All communities</h2>
+      <div class="others-grid" id="others-grid">
+        <div style="grid-column: 1 / -1; padding: 24px; text-align: center; color: var(--warm-gray);">Loading…</div>
+      </div>
+    </section>
+
+    <!-- ===== Voices received counter ===== -->
+    <div class="voices-counter">
+      <div class="big-num" id="voices-num">—</div>
+      <div class="label">voices received in the last 24 hours · <strong>your report counts</strong></div>
+    </div>
+
+  </main>
+
+  <footer class="f">
+    <div class="inner">
+      Built by <strong>Mario Jovenal</strong> (White Mountain Apache) and CyberApache AI Solutions.<br>
+      Sister tools: <a href="https://cyberapacheaisolutions.com/ai-navigator" target="_blank" rel="noopener">WMAT Code Navigator</a> · <a href="https://federalindianlawnavigator.com" target="_blank" rel="noopener">Federal Indian Law Navigator</a><br>
+      <div class="small">A community-built communication tool. Not affiliated with the WMAT Utility Authority. In a true emergency, call 911.</div>
+    </div>
+  </footer>
+
+  <!-- ===== Floating Report button ===== -->
+  <button class="fab" id="fab" type="button">
+    <span class="fab-icon">👉</span>
+    <span>Click here to report water status</span>
+  </button>
+
+  <!-- ===== Sheet overlay + report form sheet ===== -->
+  <div class="sheet-overlay" id="sheet-overlay"></div>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <div class="grabber"></div>
+
+    <div id="sheet-form">
+      <h2 id="sheet-title">What are you seeing?</h2>
+      <p class="sub">30 seconds. Helps your neighbors know what's happening.</p>
+
+      <div class="field">
+        <label for="f-community">Your community</label>
+        <select id="f-community"></select>
+      </div>
+
+      <div class="field">
+        <label>Water status (tap one)</label>
+        <div class="status-buttons" id="status-buttons">
+          <button type="button" data-value="service_ok"><span class="emoji">💧</span><span>Water is on</span></button>
+          <button type="button" data-value="no_service"><span class="emoji">🚱</span><span>No water</span></button>
+          <button type="button" data-value="low_pressure"><span class="emoji">🐌</span><span>Low pressure</span></button>
+          <button type="button" data-value="cloudy_water"><span class="emoji">☁️</span><span>Cloudy / dirty</span></button>
+          <button type="button" data-value="boil_advisory"><span class="emoji">♨️</span><span>Boil advisory</span></button>
+          <button type="button" data-value="other"><span class="emoji">📝</span><span>Other</span></button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="f-description">Anything else? (optional)</label>
+        <textarea id="f-description" placeholder="When did this start? Anything else your neighbors should know?" maxlength="500"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="f-name">Your name (optional)</label>
+        <input type="text" id="f-name" maxlength="80" placeholder="Leave blank to stay anonymous" />
+      </div>
+
+      <div class="submit-row">
+        <button class="cancel" id="sheet-cancel" type="button">Not now</button>
+        <button class="submit" id="sheet-submit" type="button">Share with my neighbors</button>
+      </div>
+      <div class="form-msg" id="form-msg"></div>
+      <div class="privacy">Anonymous by default. Tribal leaders monitor this dashboard. You are not alone.</div>
+    </div>
+
+    <div id="sheet-thanks" class="thanks" hidden>
+      <div class="heart">🤝</div>
+      <h3>Your community sees you.</h3>
+      <p>Your report has been received. Tribal leaders monitor this dashboard.</p>
+      <p>You are not alone. Relief is coming.</p>
+      <button type="button" id="sheet-close-thanks">Close</button>
+    </div>
+  </div>
+
+  <script>
+    // ===== Communities, hardcoded as fallback / select source =====
+    const COMMUNITIES = [
+      { slug: 'miner-flats',         name: 'Miner Flats', upstream: true },
+      { slug: 'whiteriver',          name: 'Whiteriver',  upstream: false },
+      { slug: 'east-fork',           name: 'East Fork',   upstream: false },
+      { slug: 'cedar-creek',         name: 'Cedar Creek', upstream: false },
+      { slug: 'carrizo',             name: 'Carrizo',     upstream: false },
+      { slug: 'mcnary',              name: 'McNary',      upstream: false },
+      { slug: 'cibecue',             name: 'Cibecue',     upstream: false },
+      { slug: 'hon-dah',             name: 'Hon-Dah',     upstream: false },
+      { slug: 'forestdale',          name: 'Forestdale',  upstream: false },
+      { slug: 'sunrise-park-resort', name: 'Sunrise Park Resort', upstream: false },
+      { slug: 'turkey-creek',        name: 'Turkey Creek', upstream: false },
+    ];
+
+    // ===== Persisted "My Community" preference =====
+    const MY_KEY = 'wmat-service-status:my-community';
+    function getMyCommunity() {
+      try { return localStorage.getItem(MY_KEY) || ''; } catch { return ''; }
+    }
+    function setMyCommunity(slug) {
+      try { localStorage.setItem(MY_KEY, slug); } catch {}
+    }
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, ch => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[ch]));
+    }
+
+    function timeAgo(iso) {
+      if (!iso) return '';
+      const t = new Date(iso).getTime();
+      const diffMs = Date.now() - t;
+      const m = Math.floor(diffMs / 60000);
+      if (m < 1) return 'a moment ago';
+      if (m < 60) return m + ' minute' + (m===1?'':'s') + ' ago';
+      const h = Math.floor(m / 60);
+      if (h < 24) return h + ' hour' + (h===1?'':'s') + ' ago';
+      return Math.floor(h / 24) + ' day(s) ago';
+    }
+
+    // ===== Water drop SVG generator =====
+    // Renders a stylized water drop with fill level and color tuned to status.
+    function dropSvg(code) {
+      const colors = {
+        ok:        { fill: '#4a9d4d', stroke: '#2e6b32', level: 0.85 },
+        degraded:  { fill: '#d4791f', stroke: '#8d4b08', level: 0.55 },
+        boil:      { fill: '#b85c00', stroke: '#7a3d00', level: 0.55 },
+        outage:    { fill: '#c54545', stroke: '#7d2828', level: 0.15 },
+        unknown:   { fill: '#a89e87', stroke: '#6b5f48', level: 0.45 }
+      };
+      const c = colors[code] || colors.unknown;
+      // SVG drop path approx
+      const drop = 'M50 8 C 50 8 14 50 14 70 a 36 36 0 1 0 72 0 C 86 50 50 8 50 8 Z';
+      // We mask the fill so only the lower X% of the drop is colored
+      const cutY = 90 - (c.level * 80);  // 10..90
+      return `
+        <defs>
+          <clipPath id="dropClip"><path d="${drop}"/></clipPath>
+        </defs>
+        <path d="${drop}" fill="#fff" stroke="${c.stroke}" stroke-width="2"/>
+        <g clip-path="url(#dropClip)">
+          <rect x="0" y="${cutY}" width="100" height="100" fill="${c.fill}" />
+        </g>
+        <path d="${drop}" fill="none" stroke="${c.stroke}" stroke-width="2.5"/>
+      `;
+    }
+
+    function setDropIcon(svgEl, code) {
+      svgEl.innerHTML = dropSvg(code);
+    }
+
+    // ===== Comfort messages by status =====
+    function comfortFor(myRow) {
+      const c = myRow && myRow.derived_status ? myRow.derived_status.code : 'unknown';
+      const name = myRow ? myRow.community_name : 'Your community';
+      if (c === 'outage') {
+        return `<strong>${escapeHtml(name)}, we hear you.</strong> Your neighbors are reporting this too. Below you'll find where to get water and who to call. Tribal leaders monitor this dashboard — your voice has been received. Relief is coming.`;
+      }
+      if (c === 'boil_advisory') {
+        return `<strong>${escapeHtml(name)} — boil advisory in effect.</strong> Boil all drinking water for at least one minute before using. We see you. Take care of each other.`;
+      }
+      if (c === 'degraded') {
+        return `<strong>${escapeHtml(name)} — your neighbors are noticing issues.</strong> Low pressure or cloudy water. Tell us what you're seeing too so the picture is complete.`;
+      }
+      if (c === 'ok') {
+        return `<strong>${escapeHtml(name)} — water is flowing today.</strong> Neighbors have confirmed it. If anything changes, let us know so the rest of the community can stay informed.`;
+      }
+      // unknown
+      return `<strong>You are not alone.</strong> This is a place where your community speaks together. Every report you share is seen by your neighbors and by tribal leaders. When water is hard, we hear each other here.`;
+    }
+
+    function statusLabelHuman(code) {
+      return {
+        ok: 'Water is flowing',
+        degraded: 'Some issues reported',
+        boil_advisory: 'Boil advisory',
+        outage: 'No water reported',
+        unknown: 'No recent reports'
+      }[code] || 'No recent reports';
+    }
+
+    // ===== Render =====
+    const els = {
+      updated: document.getElementById('updated'),
+      comfort: document.getElementById('comfort'),
+      picker: document.getElementById('picker'),
+      pickerBtns: document.getElementById('picker-buttons'),
+      heroCard: document.getElementById('hero-card'),
+      myName: document.getElementById('my-name'),
+      myDrop: document.getElementById('my-drop'),
+      myStatus: document.getElementById('my-status'),
+      myVoice: document.getElementById('my-voice'),
+      resources: document.getElementById('resources'),
+      othersHeading: document.getElementById('others-heading'),
+      othersGrid: document.getElementById('others-grid'),
+      voicesNum: document.getElementById('voices-num'),
+      changeCommunity: document.getElementById('change-community'),
+      // Sheet
+      fab: document.getElementById('fab'),
+      overlay: document.getElementById('sheet-overlay'),
+      sheet: document.getElementById('sheet'),
+      sheetForm: document.getElementById('sheet-form'),
+      sheetThanks: document.getElementById('sheet-thanks'),
+      fCommunity: document.getElementById('f-community'),
+      fDescription: document.getElementById('f-description'),
+      fName: document.getElementById('f-name'),
+      statusButtons: document.getElementById('status-buttons'),
+      sheetCancel: document.getElementById('sheet-cancel'),
+      sheetSubmit: document.getElementById('sheet-submit'),
+      sheetCloseThanks: document.getElementById('sheet-close-thanks'),
+      formMsg: document.getElementById('form-msg'),
+    };
+
+    function showPicker() {
+      els.picker.hidden = false;
+      els.heroCard.hidden = true;
+      els.othersHeading.textContent = 'All communities';
+    }
+    function showHero() {
+      els.picker.hidden = true;
+      els.heroCard.hidden = false;
+      els.othersHeading.textContent = 'Other communities';
+    }
+
+    function renderPickerButtons() {
+      els.pickerBtns.innerHTML = COMMUNITIES.map(c => `
+        <button type="button" data-slug="${c.slug}">${escapeHtml(c.name)}</button>
+      `).join('');
+      els.pickerBtns.querySelectorAll('button').forEach(b => {
+        b.addEventListener('click', () => {
+          setMyCommunity(b.dataset.slug);
+          loadStatus();
+        });
+      });
+    }
+
+    function renderMyCommunity(myRow) {
+      els.myName.textContent = myRow.community_name;
+      const code = (myRow.derived_status && myRow.derived_status.code) || 'unknown';
+      setDropIcon(els.myDrop, code);
+      els.myStatus.textContent = statusLabelHuman(code);
+      els.myStatus.className = 'status-text s-' + (code === 'boil_advisory' ? 'boil' : code);
+      const n = Number(myRow.total_reports_24h || 0);
+      if (n === 0) {
+        els.myVoice.textContent = 'No reports in the last 24 hours. Be the first.';
+      } else {
+        const last = myRow.last_report_at ? timeAgo(myRow.last_report_at) : '';
+        els.myVoice.textContent = `${n} neighbor${n===1?'':'s'} reported ${last ? '— last ' + last : ''}.`;
+      }
+    }
+
+    function renderOthers(rows, myCommunitySlug) {
+      const others = rows.filter(r => r.community_slug !== myCommunitySlug);
+      els.othersGrid.innerHTML = others.map(r => {
+        const code = (r.derived_status && r.derived_status.code) || 'unknown';
+        const isUpstream = r.is_upstream_node;
+        const totalReports = Number(r.total_reports_24h || 0);
+        const status = statusLabelHuman(code);
+        const reportLine = totalReports
+          ? `${totalReports} report${totalReports===1?'':'s'}`
+          : 'No recent reports';
+        return `
+          <div class="comm-card ${isUpstream ? 'upstream' : ''}" data-slug="${escapeHtml(r.community_slug)}">
+            ${isUpstream ? '<div class="upstream-tag">Upstream pumps</div>' : ''}
+            <svg class="drop-icon" viewBox="0 0 100 100" aria-hidden="true">${dropSvg(code)}</svg>
+            <div class="cn">${escapeHtml(r.community_name)}</div>
+            <div class="cs">${escapeHtml(status)}</div>
+            <div class="cs" style="font-size:11px; margin-top:2px;">${escapeHtml(reportLine)}</div>
+          </div>
+        `;
+      }).join('');
+      els.othersGrid.querySelectorAll('.comm-card').forEach(card => {
+        card.addEventListener('click', () => {
+          // Tapping a non-my community opens the report sheet pre-set to that community
+          els.fCommunity.value = card.dataset.slug;
+          openSheet();
+        });
+      });
+    }
+
+    function renderResources(showIt) {
+      els.resources.hidden = !showIt;
+    }
+
+    function renderVoicesCounter(rows) {
+      const total = rows.reduce((acc, r) => acc + Number(r.total_reports_24h || 0), 0);
+      els.voicesNum.textContent = total;
+    }
+
+    function renderAll(rows) {
+      const my = getMyCommunity();
+      if (!my) {
+        showPicker();
+        renderOthers(rows, null);
+      } else {
+        const myRow = rows.find(r => r.community_slug === my);
+        if (!myRow) {
+          // Probably wrong slug saved — reset
+          setMyCommunity('');
+          showPicker();
+          renderOthers(rows, null);
+        } else {
+          showHero();
+          renderMyCommunity(myRow);
+          renderOthers(rows, my);
+          els.comfort.innerHTML = comfortFor(myRow);
+          if (['outage', 'boil_advisory', 'degraded'].includes(myRow.derived_status && myRow.derived_status.code)) {
+            els.comfort.classList.add('alert');
+          } else {
+            els.comfort.classList.remove('alert');
+          }
+        }
+      }
+
+      // Resources are shown whenever there's any outage or boil advisory ANYWHERE
+      const anyAlert = rows.some(r => {
+        const c = r.derived_status && r.derived_status.code;
+        return c === 'outage' || c === 'boil_advisory';
+      });
+      renderResources(anyAlert);
+
+      renderVoicesCounter(rows);
+    }
+
+    async function loadStatus() {
+      try {
+        const resp = await fetch('/api/status', { cache: 'no-store' });
+        if (!resp.ok) throw new Error('Server returned ' + resp.status);
+        const data = await resp.json();
+        const waterRows = (data.rows || []).filter(r => r.service_slug === 'water');
+        renderAll(waterRows);
+        els.updated.textContent = 'Updated ' + new Date(data.fetched_at).toLocaleTimeString();
+      } catch (err) {
+        console.error('Status load error:', err);
+        els.othersGrid.innerHTML = '<div style="grid-column: 1 / -1; padding: 24px; text-align: center; color: var(--outage-coral);">Could not load current status. Check back in a moment.</div>';
+        els.updated.textContent = 'Could not load status';
+      }
+    }
+
+    // ===== Sheet (report form) interaction =====
+    function populateCommunitySelect() {
+      els.fCommunity.innerHTML = COMMUNITIES.map(c => `
+        <option value="${c.slug}">${escapeHtml(c.name)}</option>
+      `).join('');
+      const my = getMyCommunity();
+      if (my) els.fCommunity.value = my;
+    }
+    function openSheet() {
+      els.overlay.classList.add('open');
+      els.sheet.classList.add('open');
+      els.sheetForm.hidden = false;
+      els.sheetThanks.hidden = true;
+      els.formMsg.textContent = '';
+      els.formMsg.className = 'form-msg';
+      document.body.style.overflow = 'hidden';
+    }
+    function closeSheet() {
+      els.overlay.classList.remove('open');
+      els.sheet.classList.remove('open');
+      document.body.style.overflow = '';
+      // Clear selected status
+      els.statusButtons.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+      selectedStatus = null;
+      els.fDescription.value = '';
+      els.fName.value = '';
+    }
+    let selectedStatus = null;
+    els.statusButtons.querySelectorAll('button').forEach(b => {
+      b.addEventListener('click', () => {
+        els.statusButtons.querySelectorAll('button').forEach(x => x.classList.remove('selected'));
+        b.classList.add('selected');
+        selectedStatus = b.dataset.value;
+      });
+    });
+    els.fab.addEventListener('click', () => {
+      populateCommunitySelect();
+      openSheet();
+    });
+    els.sheetCancel.addEventListener('click', closeSheet);
+    els.overlay.addEventListener('click', closeSheet);
+    els.sheetCloseThanks.addEventListener('click', closeSheet);
+
+    els.sheetSubmit.addEventListener('click', async () => {
+      els.formMsg.textContent = '';
+      els.formMsg.className = 'form-msg';
+
+      const payload = {
+        community_slug: els.fCommunity.value,
+        service_slug: 'water',
+        status: selectedStatus,
+        description: els.fDescription.value,
+        reporter_name: els.fName.value,
+      };
+      if (!payload.community_slug) {
+        els.formMsg.textContent = 'Pick your community.'; els.formMsg.className = 'form-msg error'; return;
+      }
+      if (!payload.status) {
+        els.formMsg.textContent = 'Tap one of the status buttons above.'; els.formMsg.className = 'form-msg error'; return;
+      }
+
+      els.sheetSubmit.disabled = true;
+      els.formMsg.textContent = 'Sending…';
+
+      try {
+        const resp = await fetch('/api/report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        // Try to parse JSON, but handle the case where the server returned
+        // HTML (which happens when the backend isn't running, e.g. local test).
+        let data = {};
+        try { data = await resp.json(); } catch { /* non-JSON response */ }
+        if (!resp.ok) {
+          throw new Error(data.error || 'Sorry — your report could not be sent right now. Please try again in a moment.');
+        }
+        // Show thank-you
+        els.sheetForm.hidden = true;
+        els.sheetThanks.hidden = false;
+        loadStatus();
+      } catch (err) {
+        // Friendly fallback for any error — never show raw JS error messages
+        const friendly = (err && err.message && !/token|JSON|fetch|<!DOCTYPE/i.test(err.message))
+          ? err.message
+          : 'Sorry — your report could not be sent right now. Please check your connection and try again in a moment.';
+        els.formMsg.textContent = friendly;
+        els.formMsg.className = 'form-msg error';
+      } finally {
+        els.sheetSubmit.disabled = false;
+      }
+    });
+
+    els.changeCommunity.addEventListener('click', () => {
+      setMyCommunity('');
+      loadStatus();
+    });
+
+    // ===== Initialize =====
+    renderPickerButtons();
+    loadStatus();
+    setInterval(loadStatus, 60_000);
+  </script>
+
+</body>
+</html>

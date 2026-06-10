@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "",
+  "outputDirectory": ".",
+  "framework": null,
+  "cleanUrls": true,
+  "functions": {
+    "api/report.js": { "maxDuration": 10 },
+    "api/status.js": { "maxDuration": 10 }
+  }
+}
