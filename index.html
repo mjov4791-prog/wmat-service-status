@@ -997,7 +997,11 @@
         const data = await resp.json();
         const waterRows = (data.rows || []).filter(r => r.service_slug === 'water');
         renderAll(waterRows);
-        els.updated.textContent = 'Updated ' + new Date(data.fetched_at).toLocaleTimeString();
+        // Force Arizona time (America/Phoenix). Arizona doesn't observe DST,
+        // so this is MST (UTC-7) year-round. Out-of-state viewers see the same
+        // local time as on-reservation residents.
+        const azOpts = { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Phoenix' };
+        els.updated.textContent = 'Updated ' + new Date(data.fetched_at).toLocaleTimeString('en-US', azOpts) + ' MST';
       } catch (err) {
         console.error('Status load error:', err);
         els.othersGrid.innerHTML = '<div style="grid-column: 1 / -1; padding: 24px; text-align: center; color: var(--outage-coral);">Could not load current status. Check back in a moment.</div>';
