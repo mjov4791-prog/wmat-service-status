@@ -308,7 +308,7 @@
       font-size: 13px;
     }
 
-    /* ===== Reservation map ===== */
+    /* ===== Reservation map (official WMAT image with overlay pins) ===== */
     .map-section {
       background: #fff;
       border: 1px solid var(--sand-deep);
@@ -333,42 +333,70 @@
       margin-bottom: 10px;
       font-style: italic;
     }
-    .map-svg {
+    .map-container {
+      position: relative;
+      width: 100%;
+      background: var(--sand);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .map-image {
       width: 100%;
       height: auto;
       display: block;
+      /* Slight desaturation so the colored pins stand out against the map */
+      filter: saturate(0.78) brightness(1.02);
     }
-    .map-svg .rez-bg {
-      fill: var(--sand-deep);
-      fill-opacity: 0.45;
-      stroke: var(--sand-deep);
-      stroke-width: 1.5;
+    .map-pins {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
     }
-    .map-svg .pin {
+    .map-pin {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      pointer-events: auto;
       cursor: pointer;
+      text-align: center;
       transition: transform 0.15s;
+      user-select: none;
     }
-    .map-svg .pin:hover { transform: scale(1.18); transform-origin: center; }
-    .map-svg .pin .pin-circle {
-      stroke: #fff;
-      stroke-width: 2.5;
+    .map-pin:hover { transform: translate(-50%, -50%) scale(1.18); }
+    .map-pin .pin-dot {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      border: 2.5px solid #fff;
+      margin: 0 auto;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.35), 0 0 0 1px rgba(0,0,0,0.15);
     }
-    .map-svg .pin.upstream .pin-circle {
-      stroke: var(--gold-deep);
-      stroke-width: 3.5;
+    .map-pin.upstream .pin-dot {
+      width: 24px; height: 24px;
+      border: 3px solid var(--gold-deep);
+      box-shadow: 0 0 0 2px rgba(201, 138, 46, 0.45), 0 2px 4px rgba(0,0,0,0.35);
     }
-    .map-svg .pin .pin-label {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      font-size: 13px;
+    .map-pin .pin-text {
+      display: inline-block;
+      margin-top: 3px;
+      font-size: 10.5px;
       font-weight: 700;
-      fill: var(--warm-brown);
-      text-anchor: middle;
-      paint-order: stroke fill;
-      stroke: #fff;
-      stroke-width: 3;
-      stroke-linejoin: round;
+      color: var(--warm-brown);
+      background: rgba(255, 250, 240, 0.92);
+      padding: 1px 5px;
+      border-radius: 4px;
+      white-space: nowrap;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.15);
     }
-    .map-svg .pin.upstream .pin-label { fill: var(--gold-deep); }
+    .map-pin.upstream .pin-text { color: var(--gold-deep); }
+    .map-source {
+      font-size: 10.5px;
+      color: var(--warm-gray);
+      text-align: center;
+      margin-top: 6px;
+      font-style: italic;
+    }
+    .map-source a { color: var(--warm-gray); text-decoration: underline; }
     .map-legend {
       display: flex;
       justify-content: center;
@@ -750,16 +778,15 @@
       </div>
     </div>
 
-    <!-- ===== Reservation map (stylized SVG) ===== -->
+    <!-- ===== Reservation map (official WMAT image with overlaid pins) ===== -->
     <section class="map-section">
       <div class="map-title">Fort Apache Indian Reservation</div>
       <div class="map-sub">Tap a community pin to see status or file a report</div>
-      <svg class="map-svg" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet" aria-label="Map of WMAT communities">
-        <!-- Stylized reservation background shape (organic blob) -->
-        <path class="rez-bg" d="M 60 230 Q 70 140 180 110 Q 280 80 380 100 Q 470 70 580 100 Q 700 80 820 130 Q 920 170 940 250 Q 950 340 870 400 Q 760 460 620 450 Q 480 470 360 440 Q 240 460 140 410 Q 50 360 60 230 Z" />
-        <!-- Community pins go here, populated by JS -->
-        <g id="map-pins"></g>
-      </svg>
+      <div class="map-container">
+        <img src="public/reservation-map.jpg" alt="Official map of Fort Apache Indian Reservation by WMAT GIS" class="map-image" loading="lazy" />
+        <div class="map-pins" id="map-pins"></div>
+      </div>
+      <div class="map-source">Map: WMAT GIS · <a href="http://www.wmat.nsn.us" target="_blank" rel="noopener">wmat.nsn.us</a></div>
       <div class="map-legend">
         <span class="item"><span class="dot ok"></span>Service OK</span>
         <span class="item"><span class="dot degraded"></span>Issues reported</span>
@@ -813,6 +840,13 @@
         <select id="f-community"></select>
       </div>
 
+      <div class="field" id="f-neighborhood-field" hidden>
+        <label for="f-neighborhood">Which neighborhood? (optional)</label>
+        <select id="f-neighborhood">
+          <option value="">Anywhere in Whiteriver</option>
+        </select>
+      </div>
+
       <div class="field">
         <label>Water status (tap one)</label>
         <div class="status-buttons" id="status-buttons">
@@ -854,28 +888,53 @@
 
   <script>
     // ===== Communities, hardcoded as fallback / select source =====
-    // The x/y coordinates are positions on the stylized 1000x500 SVG map.
-    // These are approximate geographic positions on Fort Apache Reservation,
-    // but stylized for clarity rather than strictly accurate. They can be
-    // refined in V2 when WMAT GIS team provides real spatial data.
+    // The x/y coordinates are positions on the 1000x600 SVG map of Fort Apache
+    // Reservation. These positions are traced from the official WMAT GIS map
+    // and approximate the real geographic position of each community on the
+    // reservation. The four newer communities (Dark Shadows, Diamond Creek,
+    // Rainbow City, China Town) are placed approximately; flag them for
+    // correction if any of them are misplaced.
+    // Positions are PERCENTAGES of the official WMAT map image
+    // (left%, top%). Communities I can identify on the map have estimated
+    // positions; the four newer additions (Dark Shadows, Diamond Creek,
+    // Rainbow City, China Town) and Miner Flats / Turkey Creek are placed
+    // approximately and need user correction.
+    // Top-level communities have xPct/yPct (map position).
+    // Neighborhoods of a larger community have parent_slug instead — they
+    // do not appear as pins on the map. When a resident selects the parent
+    // community in the report form, an extra "Which neighborhood?" dropdown
+    // lets them be more specific.
     const COMMUNITIES = [
-      { slug: 'miner-flats',         name: 'Miner Flats',  upstream: true,  x: 400, y: 170 },
-      { slug: 'whiteriver',          name: 'Whiteriver',   upstream: false, x: 500, y: 250 },
-      { slug: 'east-fork',           name: 'East Fork',    upstream: false, x: 590, y: 270 },
-      { slug: 'cedar-creek',         name: 'Cedar Creek',  upstream: false, x: 470, y: 380 },
-      { slug: 'carrizo',             name: 'Carrizo',      upstream: false, x: 230, y: 200 },
-      { slug: 'mcnary',              name: 'McNary',       upstream: false, x: 720, y: 220 },
-      { slug: 'cibecue',             name: 'Cibecue',      upstream: false, x: 130, y: 250 },
-      { slug: 'hon-dah',             name: 'Hon-Dah',      upstream: false, x: 800, y: 310 },
-      { slug: 'forestdale',          name: 'Forestdale',   upstream: false, x: 320, y: 140 },
-      { slug: 'sunrise-park-resort', name: 'Sunrise Park', upstream: false, x: 910, y: 220 },
-      { slug: 'turkey-creek',        name: 'Turkey Creek', upstream: false, x: 560, y: 410 },
-      { slug: 'canyon-day',          name: 'Canyon Day',   upstream: false, x: 420, y: 320 },
-      { slug: 'dark-shadows',        name: 'Dark Shadows', upstream: false, x: 340, y: 390 },
-      { slug: 'diamond-creek',       name: 'Diamond Creek', upstream: false, x: 660, y: 400 },
-      { slug: 'rainbow-city',        name: 'Rainbow City', upstream: false, x: 370, y: 250 },
-      { slug: 'china-town',          name: 'China Town',   upstream: false, x: 690, y: 350 },
+      { slug: 'cibecue',             name: 'Cibecue',       upstream: false, xPct: 22.5, yPct: 31 },
+      { slug: 'carrizo',             name: 'Carrizo',       upstream: false, xPct: 37,   yPct: 38 },
+      { slug: 'forestdale',          name: 'Forestdale',    upstream: false, xPct: 51,   yPct: 19 },
+      { slug: 'hon-dah',             name: 'Hon-Dah',       upstream: false, xPct: 62,   yPct: 32 },
+      // Miner Flats is south of Hon-Dah (upstream pump location)
+      { slug: 'miner-flats',         name: 'Miner Flats',   upstream: true,  xPct: 60,   yPct: 44 },
+      { slug: 'mcnary',              name: 'McNary',        upstream: false, xPct: 67,   yPct: 30 },
+      { slug: 'sunrise-park-resort', name: 'Sunrise Park',  upstream: false, xPct: 87,   yPct: 37 },
+      { slug: 'whiteriver',          name: 'Whiteriver',    upstream: false, xPct: 58,   yPct: 60 },
+      { slug: 'east-fork',           name: 'East Fork',     upstream: false, xPct: 63,   yPct: 64 },
+      { slug: 'cedar-creek',         name: 'Cedar Creek',   upstream: false, xPct: 50,   yPct: 53 },
+      { slug: 'canyon-day',          name: 'Canyon Day',    upstream: false, xPct: 57,   yPct: 72 },
+      { slug: 'turkey-creek',        name: 'Turkey Creek',  upstream: false, xPct: 46,   yPct: 68 },
+      // Neighborhoods of Whiteriver — no map pin, selectable via sub-dropdown.
+      { slug: 'dark-shadows',        name: 'Dark Shadows',  upstream: false, parent_slug: 'whiteriver' },
+      { slug: 'diamond-creek',       name: 'Diamond Creek', upstream: false, parent_slug: 'whiteriver' },
+      { slug: 'rainbow-city',        name: 'Rainbow City',  upstream: false, parent_slug: 'whiteriver' },
+      { slug: 'china-town',          name: 'China Town',    upstream: false, parent_slug: 'whiteriver' },
     ];
+
+    // Helper sets/lists derived from COMMUNITIES
+    const TOP_LEVEL_COMMUNITIES = COMMUNITIES.filter(c => !c.parent_slug);
+    const NEIGHBORHOOD_SLUGS = new Set(COMMUNITIES.filter(c => c.parent_slug).map(c => c.slug));
+    const NEIGHBORHOODS_BY_PARENT = COMMUNITIES.reduce((acc, c) => {
+      if (c.parent_slug) {
+        if (!acc[c.parent_slug]) acc[c.parent_slug] = [];
+        acc[c.parent_slug].push(c);
+      }
+      return acc;
+    }, {});
 
     // ===== Persisted "My Community" preference =====
     const MY_KEY = 'wmat-service-status:my-community';
@@ -1009,7 +1068,10 @@
     }
 
     function renderPickerButtons() {
-      els.pickerBtns.innerHTML = COMMUNITIES.map(c => `
+      // Neighborhoods are not shown in the picker — only top-level communities.
+      // Users from Whiteriver pick "Whiteriver" first, then can specify a
+      // neighborhood when reporting.
+      els.pickerBtns.innerHTML = TOP_LEVEL_COMMUNITIES.map(c => `
         <button type="button" data-slug="${c.slug}">${escapeHtml(c.name)}</button>
       `).join('');
       els.pickerBtns.querySelectorAll('button').forEach(b => {
@@ -1035,10 +1097,10 @@
       }
     }
 
-    // ===== Render the stylized SVG map with status-colored pins =====
+    // ===== Render community pins overlaid on the official map image =====
     function renderMap(rows) {
-      const pinsGroup = document.getElementById('map-pins');
-      if (!pinsGroup) return;
+      const pinsContainer = document.getElementById('map-pins');
+      if (!pinsContainer) return;
       // Lookup status by slug
       const statusBySlug = {};
       rows.forEach(r => { statusBySlug[r.community_slug] = (r.derived_status && r.derived_status.code) || 'unknown'; });
@@ -1052,31 +1114,44 @@
         unknown: '#a89e87'
       }[code] || '#a89e87');
 
-      pinsGroup.innerHTML = COMMUNITIES.map(c => {
-        const code = statusBySlug[c.slug] || 'unknown';
+      // Only top-level communities get map pins. Neighborhoods (with
+      // parent_slug) are selected via the report-form sub-dropdown instead.
+      pinsContainer.innerHTML = TOP_LEVEL_COMMUNITIES.map(c => {
+        // If this community has neighborhoods, aggregate their status into
+        // the parent so the map pin reflects the worst-case status across
+        // the whole town. Otherwise just use this community's own status.
+        let code = statusBySlug[c.slug] || 'unknown';
+        const childSlugs = (NEIGHBORHOODS_BY_PARENT[c.slug] || []).map(n => n.slug);
+        const severity = { unknown: 0, ok: 1, degraded: 2, boil_advisory: 3, outage: 4 };
+        let worstSev = severity[code] || 0;
+        childSlugs.forEach(s => {
+          const childCode = statusBySlug[s];
+          const childSev = severity[childCode] || 0;
+          if (childSev > worstSev) { worstSev = childSev; code = childCode; }
+        });
         const fill = fillFor(code);
-        const r = c.upstream ? 22 : 16;
         const upstreamCls = c.upstream ? 'upstream' : '';
         return `
-          <g class="pin ${upstreamCls}" data-slug="${c.slug}" data-name="${escapeHtml(c.name)}">
-            <circle class="pin-circle" cx="${c.x}" cy="${c.y}" r="${r}" fill="${fill}"></circle>
-            <text class="pin-label" x="${c.x}" y="${c.y + r + 16}">${escapeHtml(c.name)}</text>
-            <title>${escapeHtml(c.name)} — tap to view or report</title>
-          </g>
+          <div class="map-pin ${upstreamCls}"
+               style="left: ${c.xPct}%; top: ${c.yPct}%;"
+               data-slug="${c.slug}"
+               title="${escapeHtml(c.name)} — tap to view or report">
+            <div class="pin-dot" style="background: ${fill};"></div>
+            <span class="pin-text">${escapeHtml(c.name)}</span>
+          </div>
         `;
       }).join('');
 
       // Click a pin → either set as My Community (if not set), or open report form
-      pinsGroup.querySelectorAll('.pin').forEach(g => {
-        g.addEventListener('click', () => {
-          const slug = g.dataset.slug;
+      pinsContainer.querySelectorAll('.map-pin').forEach(pin => {
+        pin.addEventListener('click', () => {
+          const slug = pin.dataset.slug;
           const my = getMyCommunity();
           if (!my) {
             setMyCommunity(slug);
             loadStatus();
             window.scrollTo({ top: 0, behavior: 'smooth' });
           } else {
-            // Pre-fill the report form with this community
             populateCommunitySelect();
             els.fCommunity.value = slug;
             openSheet();
@@ -1086,7 +1161,11 @@
     }
 
     function renderOthers(rows, myCommunitySlug) {
-      const others = rows.filter(r => r.community_slug !== myCommunitySlug);
+      // Hide neighborhoods from the grid — they're rolled up into their parent.
+      const others = rows.filter(r =>
+        r.community_slug !== myCommunitySlug &&
+        !NEIGHBORHOOD_SLUGS.has(r.community_slug)
+      );
       els.othersGrid.innerHTML = others.map(r => {
         const code = (r.derived_status && r.derived_status.code) || 'unknown';
         const isUpstream = r.is_upstream_node;
@@ -1175,16 +1254,42 @@
         console.error('Status load error:', err);
         els.othersGrid.innerHTML = '<div style="grid-column: 1 / -1; padding: 24px; text-align: center; color: var(--outage-coral);">Could not load current status. Check back in a moment.</div>';
         els.updated.textContent = 'Could not load status';
+        // Still render the map (with all pins in "unknown" state) so the
+        // visual stays useful even if the API is unreachable.
+        renderMap([]);
       }
     }
 
     // ===== Sheet (report form) interaction =====
     function populateCommunitySelect() {
-      els.fCommunity.innerHTML = COMMUNITIES.map(c => `
+      // Only top-level communities go in the main dropdown.
+      els.fCommunity.innerHTML = TOP_LEVEL_COMMUNITIES.map(c => `
         <option value="${c.slug}">${escapeHtml(c.name)}</option>
       `).join('');
       const my = getMyCommunity();
-      if (my) els.fCommunity.value = my;
+      if (my && TOP_LEVEL_COMMUNITIES.some(c => c.slug === my)) {
+        els.fCommunity.value = my;
+      }
+      updateNeighborhoodField();
+    }
+
+    // Show/hide the neighborhood sub-dropdown based on the selected community.
+    function updateNeighborhoodField() {
+      const commSlug = els.fCommunity.value;
+      const neighborhoods = NEIGHBORHOODS_BY_PARENT[commSlug] || [];
+      const field = document.getElementById('f-neighborhood-field');
+      const nSelect = document.getElementById('f-neighborhood');
+      if (neighborhoods.length > 0) {
+        const opts = ['<option value="">Anywhere in ' + escapeHtml(
+          TOP_LEVEL_COMMUNITIES.find(c => c.slug === commSlug)?.name || commSlug
+        ) + '</option>']
+          .concat(neighborhoods.map(n => `<option value="${n.slug}">${escapeHtml(n.name)}</option>`));
+        nSelect.innerHTML = opts.join('');
+        field.hidden = false;
+      } else {
+        nSelect.innerHTML = '';
+        field.hidden = true;
+      }
     }
     function openSheet() {
       els.overlay.classList.add('open');
@@ -1217,6 +1322,8 @@
       populateCommunitySelect();
       openSheet();
     });
+    // When the community dropdown changes, show/hide the neighborhood field.
+    els.fCommunity.addEventListener('change', updateNeighborhoodField);
     els.sheetCancel.addEventListener('click', closeSheet);
     els.overlay.addEventListener('click', closeSheet);
     els.sheetCloseThanks.addEventListener('click', closeSheet);
@@ -1225,8 +1332,13 @@
       els.formMsg.textContent = '';
       els.formMsg.className = 'form-msg';
 
+      // If a neighborhood was picked, the report is filed against the neighborhood
+      // (which exists as its own community row in the database). Otherwise the
+      // report is filed against the top-level community.
+      const neighborhoodSlug = document.getElementById('f-neighborhood').value;
+      const effectiveSlug = neighborhoodSlug || els.fCommunity.value;
       const payload = {
-        community_slug: els.fCommunity.value,
+        community_slug: effectiveSlug,
         service_slug: 'water',
         status: selectedStatus,
         description: els.fDescription.value,
@@ -1278,6 +1390,10 @@
 
     // ===== Initialize =====
     renderPickerButtons();
+    // Render pins immediately on page load (in "unknown" state) so the map
+    // visual is complete even before the first API call resolves. The pins
+    // get updated with real colors as soon as loadStatus succeeds.
+    renderMap([]);
     loadStatus();
     setInterval(loadStatus, 60_000);
   </script>
