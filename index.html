@@ -308,6 +308,96 @@
       font-size: 13px;
     }
 
+    /* ===== Reservation map ===== */
+    .map-section {
+      background: #fff;
+      border: 1px solid var(--sand-deep);
+      border-radius: 16px;
+      padding: 16px 14px 12px;
+      margin-bottom: 22px;
+      overflow: hidden;
+    }
+    .map-section .map-title {
+      font-size: 13px;
+      color: var(--warm-brown-soft);
+      text-align: center;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .map-section .map-sub {
+      font-size: 12px;
+      color: var(--warm-gray);
+      text-align: center;
+      margin-bottom: 10px;
+      font-style: italic;
+    }
+    .map-svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .map-svg .rez-bg {
+      fill: var(--sand-deep);
+      fill-opacity: 0.45;
+      stroke: var(--sand-deep);
+      stroke-width: 1.5;
+    }
+    .map-svg .pin {
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .map-svg .pin:hover { transform: scale(1.18); transform-origin: center; }
+    .map-svg .pin .pin-circle {
+      stroke: #fff;
+      stroke-width: 2.5;
+    }
+    .map-svg .pin.upstream .pin-circle {
+      stroke: var(--gold-deep);
+      stroke-width: 3.5;
+    }
+    .map-svg .pin .pin-label {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      fill: var(--warm-brown);
+      text-anchor: middle;
+      paint-order: stroke fill;
+      stroke: #fff;
+      stroke-width: 3;
+      stroke-linejoin: round;
+    }
+    .map-svg .pin.upstream .pin-label { fill: var(--gold-deep); }
+    .map-legend {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      font-size: 11px;
+      color: var(--warm-brown-soft);
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--sand-deep);
+    }
+    .map-legend .item { display: inline-flex; align-items: center; gap: 4px; }
+    .map-legend .dot {
+      display: inline-block;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      border: 1.5px solid #fff;
+    }
+    .map-legend .dot.ok { background: var(--ok-green); }
+    .map-legend .dot.degraded { background: var(--warning-amber); }
+    .map-legend .dot.outage { background: var(--outage-coral); }
+    .map-legend .dot.unknown { background: var(--unknown-tan); }
+    .map-legend .dot.upstream {
+      background: var(--unknown-tan);
+      border-color: var(--gold-deep);
+      border-width: 2px;
+    }
+
     /* ===== Other communities grid ===== */
     .others-grid {
       display: grid;
@@ -660,6 +750,25 @@
       </div>
     </div>
 
+    <!-- ===== Reservation map (stylized SVG) ===== -->
+    <section class="map-section">
+      <div class="map-title">Fort Apache Indian Reservation</div>
+      <div class="map-sub">Tap a community pin to see status or file a report</div>
+      <svg class="map-svg" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet" aria-label="Map of WMAT communities">
+        <!-- Stylized reservation background shape (organic blob) -->
+        <path class="rez-bg" d="M 60 230 Q 70 140 180 110 Q 280 80 380 100 Q 470 70 580 100 Q 700 80 820 130 Q 920 170 940 250 Q 950 340 870 400 Q 760 460 620 450 Q 480 470 360 440 Q 240 460 140 410 Q 50 360 60 230 Z" />
+        <!-- Community pins go here, populated by JS -->
+        <g id="map-pins"></g>
+      </svg>
+      <div class="map-legend">
+        <span class="item"><span class="dot ok"></span>Service OK</span>
+        <span class="item"><span class="dot degraded"></span>Issues reported</span>
+        <span class="item"><span class="dot outage"></span>Outage</span>
+        <span class="item"><span class="dot unknown"></span>No recent reports</span>
+        <span class="item"><span class="dot upstream"></span>Upstream pump (Miner Flats)</span>
+      </div>
+    </section>
+
     <!-- ===== Other communities grid ===== -->
     <section>
       <h2 id="others-heading">All communities</h2>
@@ -745,23 +854,27 @@
 
   <script>
     // ===== Communities, hardcoded as fallback / select source =====
+    // The x/y coordinates are positions on the stylized 1000x500 SVG map.
+    // These are approximate geographic positions on Fort Apache Reservation,
+    // but stylized for clarity rather than strictly accurate. They can be
+    // refined in V2 when WMAT GIS team provides real spatial data.
     const COMMUNITIES = [
-      { slug: 'miner-flats',         name: 'Miner Flats', upstream: true },
-      { slug: 'whiteriver',          name: 'Whiteriver',  upstream: false },
-      { slug: 'east-fork',           name: 'East Fork',   upstream: false },
-      { slug: 'cedar-creek',         name: 'Cedar Creek', upstream: false },
-      { slug: 'carrizo',             name: 'Carrizo',     upstream: false },
-      { slug: 'mcnary',              name: 'McNary',      upstream: false },
-      { slug: 'cibecue',             name: 'Cibecue',     upstream: false },
-      { slug: 'hon-dah',             name: 'Hon-Dah',     upstream: false },
-      { slug: 'forestdale',          name: 'Forestdale',  upstream: false },
-      { slug: 'sunrise-park-resort', name: 'Sunrise Park Resort', upstream: false },
-      { slug: 'turkey-creek',        name: 'Turkey Creek', upstream: false },
-      { slug: 'canyon-day',          name: 'Canyon Day',    upstream: false },
-      { slug: 'dark-shadows',        name: 'Dark Shadows',  upstream: false },
-      { slug: 'diamond-creek',       name: 'Diamond Creek', upstream: false },
-      { slug: 'rainbow-city',        name: 'Rainbow City',  upstream: false },
-      { slug: 'china-town',          name: 'China Town',    upstream: false },
+      { slug: 'miner-flats',         name: 'Miner Flats',  upstream: true,  x: 400, y: 170 },
+      { slug: 'whiteriver',          name: 'Whiteriver',   upstream: false, x: 500, y: 250 },
+      { slug: 'east-fork',           name: 'East Fork',    upstream: false, x: 590, y: 270 },
+      { slug: 'cedar-creek',         name: 'Cedar Creek',  upstream: false, x: 470, y: 380 },
+      { slug: 'carrizo',             name: 'Carrizo',      upstream: false, x: 230, y: 200 },
+      { slug: 'mcnary',              name: 'McNary',       upstream: false, x: 720, y: 220 },
+      { slug: 'cibecue',             name: 'Cibecue',      upstream: false, x: 130, y: 250 },
+      { slug: 'hon-dah',             name: 'Hon-Dah',      upstream: false, x: 800, y: 310 },
+      { slug: 'forestdale',          name: 'Forestdale',   upstream: false, x: 320, y: 140 },
+      { slug: 'sunrise-park-resort', name: 'Sunrise Park', upstream: false, x: 910, y: 220 },
+      { slug: 'turkey-creek',        name: 'Turkey Creek', upstream: false, x: 560, y: 410 },
+      { slug: 'canyon-day',          name: 'Canyon Day',   upstream: false, x: 420, y: 320 },
+      { slug: 'dark-shadows',        name: 'Dark Shadows', upstream: false, x: 340, y: 390 },
+      { slug: 'diamond-creek',       name: 'Diamond Creek', upstream: false, x: 660, y: 400 },
+      { slug: 'rainbow-city',        name: 'Rainbow City', upstream: false, x: 370, y: 250 },
+      { slug: 'china-town',          name: 'China Town',   upstream: false, x: 690, y: 350 },
     ];
 
     // ===== Persisted "My Community" preference =====
@@ -922,6 +1035,56 @@
       }
     }
 
+    // ===== Render the stylized SVG map with status-colored pins =====
+    function renderMap(rows) {
+      const pinsGroup = document.getElementById('map-pins');
+      if (!pinsGroup) return;
+      // Lookup status by slug
+      const statusBySlug = {};
+      rows.forEach(r => { statusBySlug[r.community_slug] = (r.derived_status && r.derived_status.code) || 'unknown'; });
+
+      // Status code → fill color
+      const fillFor = (code) => ({
+        ok: '#4a9d4d',
+        degraded: '#d4791f',
+        boil_advisory: '#b85c00',
+        outage: '#c54545',
+        unknown: '#a89e87'
+      }[code] || '#a89e87');
+
+      pinsGroup.innerHTML = COMMUNITIES.map(c => {
+        const code = statusBySlug[c.slug] || 'unknown';
+        const fill = fillFor(code);
+        const r = c.upstream ? 22 : 16;
+        const upstreamCls = c.upstream ? 'upstream' : '';
+        return `
+          <g class="pin ${upstreamCls}" data-slug="${c.slug}" data-name="${escapeHtml(c.name)}">
+            <circle class="pin-circle" cx="${c.x}" cy="${c.y}" r="${r}" fill="${fill}"></circle>
+            <text class="pin-label" x="${c.x}" y="${c.y + r + 16}">${escapeHtml(c.name)}</text>
+            <title>${escapeHtml(c.name)} — tap to view or report</title>
+          </g>
+        `;
+      }).join('');
+
+      // Click a pin → either set as My Community (if not set), or open report form
+      pinsGroup.querySelectorAll('.pin').forEach(g => {
+        g.addEventListener('click', () => {
+          const slug = g.dataset.slug;
+          const my = getMyCommunity();
+          if (!my) {
+            setMyCommunity(slug);
+            loadStatus();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          } else {
+            // Pre-fill the report form with this community
+            populateCommunitySelect();
+            els.fCommunity.value = slug;
+            openSheet();
+          }
+        });
+      });
+    }
+
     function renderOthers(rows, myCommunitySlug) {
       const others = rows.filter(r => r.community_slug !== myCommunitySlug);
       els.othersGrid.innerHTML = others.map(r => {
@@ -992,6 +1155,7 @@
       });
       renderResources(anyAlert);
 
+      renderMap(rows);
       renderVoicesCounter(rows);
     }
 
