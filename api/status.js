@@ -48,13 +48,31 @@ export default async function handler(req, res) {
 }
 
 function deriveStatus(r) {
-  // Simple V1 rules.
-  // - 0 reports in last 24h     → unknown / no data
-  // - any "no_service" report   → outage (red)
-  // - any "boil_advisory"       → boil advisory (orange)
-  // - any "low_pressure"        → degraded (yellow)
-  // - any "cloudy_water"        → quality issue (yellow)
-  // - only "service_ok" reports → ok (green)
+  // Priority 1: if there's a fresh report (within last 2 hours), it represents
+  // the current ground truth — water came back on, situation changed, etc.
+  // A stale "no water" report from 12 hours ago shouldn't outrank a fresh
+  // "water is on" report from 5 minutes ago.
+  const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+  const latestAtMs = r.latest_at ? new Date(r.latest_at).getTime() : 0;
+  const isFresh = latestAtMs && (Date.now() - latestAtMs) < TWO_HOURS_MS;
+
+  if (isFresh && r.latest_status) {
+    switch (r.latest_status) {
+      case 'service_ok':
+        return { code: 'ok', label: 'Service OK (recently confirmed)', severity: 1 };
+      case 'no_service':
+        return { code: 'outage', label: 'Outage (recently reported)', severity: 4 };
+      case 'boil_advisory':
+        return { code: 'boil_advisory', label: 'Boil advisory (recently reported)', severity: 3 };
+      case 'low_pressure':
+      case 'cloudy_water':
+        return { code: 'degraded', label: 'Service issues (recently reported)', severity: 2 };
+      // For 'other' or unrecognized statuses, fall through to the 24h aggregate.
+    }
+  }
+
+  // Priority 2: fall back to 24-hour aggregate (worst case in window wins).
+  // Used when there are no fresh reports in the last 2 hours.
   if (!r.total_reports_24h || Number(r.total_reports_24h) === 0) {
     return { code: 'unknown', label: 'No recent reports', severity: 0 };
   }

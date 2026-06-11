@@ -91,7 +91,8 @@ create index if not exists wss_reports_service_idx
 -- VIEW: current status per (community × service), aggregated from reports
 -- in the last 24 hours. Used by the dashboard front page.
 -- ===========================================================================
-create or replace view wss_current_status as
+drop view if exists wss_current_status;
+create view wss_current_status as
 with recent as (
   select
     community_id,
@@ -101,6 +102,14 @@ with recent as (
     created_at
   from wss_reports
   where created_at > now() - interval '24 hours'
+),
+latest_per_community as (
+  select distinct on (community_id, service_id)
+    community_id, service_id,
+    status      as latest_status,
+    created_at  as latest_at
+  from recent
+  order by community_id, service_id, created_at desc
 )
 select
   c.id              as community_id,
@@ -117,12 +126,18 @@ select
   count(r.*) filter (where r.status = 'cloudy_water')    as cloudy_water_count,
   count(r.*) filter (where r.status = 'boil_advisory')   as boil_advisory_count,
   count(r.*)                                             as total_reports_24h,
-  max(r.created_at)                                      as last_report_at
+  max(r.created_at)                                      as last_report_at,
+  lpc.latest_status,
+  lpc.latest_at
 from wss_communities c
 cross join wss_services s
 left join recent r on r.community_id = c.id and r.service_id = s.id
+left join latest_per_community lpc
+  on lpc.community_id = c.id and lpc.service_id = s.id
 where s.is_active = true
-group by c.id, c.slug, c.name, c.is_upstream_node, c.sort_order, s.id, s.slug, s.name;
+group by c.id, c.slug, c.name, c.is_upstream_node, c.sort_order,
+         s.id, s.slug, s.name,
+         lpc.latest_status, lpc.latest_at;
 
 -- ===========================================================================
 -- ROW LEVEL SECURITY — anyone can read, anyone can insert reports.
